@@ -4,8 +4,10 @@
     "outDir": "dist-electron",
     "rootDir": "./",
 
-    "module": "preserve",
+    "module": "CommonJS",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "target": "ES2022",
     "lib": ["ES2022"],
     "types": ["node"],

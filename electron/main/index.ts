@@ -1,11 +1,13 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { registerGitHandlers } from './git';
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    icon: path.join(__dirname, '..', '..', '..', 'Git Architect.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -27,6 +29,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  registerGitHandlers();
   createWindow();
 
   app.on('activate', () => {
@@ -38,9 +41,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-ipcMain.handle('gitarch:path', async () => {
+ipcMain.handle('gitarch:appPaths', async () => {
   return { appData: app.getPath('userData') };
 });
-
-
-

@@ -1,19 +1,12 @@
-import { ipcRenderer } from 'electron';
+import { contextBridge as electronContextBridge, ipcRenderer } from 'electron';
 
 export const contextBridge = {
-  // Preload-side wrapper.
-  // Renderer will call: window.__electron?.invoke('<channel>', ...args)
+  // Preload-side wrapper: expose a safe IPC bridge to the renderer's real
+  // window object using Electron's contextBridge (required when
+  // contextIsolation: true — manually mutating globalThis.window here does
+  // NOT reach the renderer, it must go through contextBridge.exposeInMainWorld).
   exposeIpc(namespace: string) {
     const invoke = (channel: string, ...args: any[]) => ipcRenderer.invoke(`${namespace}:${channel}`, ...args);
-
-    const w = (globalThis as any).window ?? {};
-    w.__electron = { invoke };
-    (globalThis as any).window = w;
+    electronContextBridge.exposeInMainWorld('__electron', { invoke });
   },
 };
-
-
-
-
-
-

@@ -2,5 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { height: 100%; }
+html, body, #root { height: 100%; }
+
+@layer components {
+  .btn {
+    @apply px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  .btn-primary {
+    @apply bg-blue-600 border-blue-500 hover:bg-blue-500;
+  }
+  .input {
+    @apply px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-blue-500;
+  }
+}
 
