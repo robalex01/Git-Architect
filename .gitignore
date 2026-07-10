@@ -1,0 +1,34 @@
+# --- Règles “standard” ---
+
+# Dépendances
+node_modules/
+
+# Sorties de build (frontend)
+dist-renderer/
+# Sorties de build (electron)
+electron/dist-electron/
+
+# Cache & bundlers
+.cache/
+*.tsbuildinfo
+
+# Environnements locaux
+.env
+.env.*
+
+# Logs
+*.log
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporaires générés par scripts (icônes)
+.tmp-ico-*.png
+
+# --- Laissez le code/les assets essentiels commit ---
+# (Ce fichier vise à ignorer uniquement ce qui est régénérable / local / build.)
+
+
