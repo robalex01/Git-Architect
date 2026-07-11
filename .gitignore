@@ -32,3 +32,4 @@ Thumbs.db
 # (Ce fichier vise à ignorer uniquement ce qui est régénérable / local / build.)
 
 
+out/
