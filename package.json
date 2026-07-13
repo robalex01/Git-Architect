@@ -1,6 +1,7 @@
 {
   "name": "git-architect",
   "private": true,
+  "author": "6voldemort",
   "version": "0.1.0",
   "description": "Git Architect - Electron + React + TypeScript visual Git repository",
   "main": "electron/dist-electron/main/index.js",

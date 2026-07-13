@@ -1,5 +1,6 @@
 const path = require('path');
 
+
 module.exports = {
   packagerConfig: {
     asar: true,
@@ -16,6 +17,8 @@ module.exports = {
       platforms: ['win32'],
       config: {
         name: 'git_architect',
+        authors: '6voldemort',
+        description: 'Git Architect - visual Git repository manager',
         setupIcon: path.join(__dirname, 'Git Architect.ico'),
       },
     },

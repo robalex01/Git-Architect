@@ -10,7 +10,12 @@ import simpleGit, { SimpleGit } from 'simple-git';
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
 function ok<T>(data: T): Result<T> {
-  return { ok: true, data };
+  // simple-git renvoie des objets avec des méthodes propres à l'instance
+  // (ex: StatusResult.isClean()), ce qui fait planter le clonage structuré
+  // utilisé par l'IPC d'Electron ("An object could not be cloned").
+  // Un aller-retour JSON retire les fonctions et ne garde que les données.
+  const cloneable = data === undefined ? data : (JSON.parse(JSON.stringify(data)) as T);
+  return { ok: true, data: cloneable };
 }
 
 function fail(error: unknown): Result<never> {
