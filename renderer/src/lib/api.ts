@@ -42,7 +42,7 @@ export const api = {
 
   status: (repoPath: string) => call<any>('status', repoPath),
   log: (repoPath: string, limit?: number) => call<any[]>('log', { repoPath, limit }),
-  branches: (repoPath: string) => call<any>('branches', repoPath),
+  branches: (repoPath: string) => call<{ all: string[]; current: string }>('branches', repoPath),
 
   commit: (repoPath: string, title: string, description?: string) =>
     call<any>('commit', { repoPath, title, description }),

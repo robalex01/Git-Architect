@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useReactFlow } from 'reactflow';
+import { FitIcon, PlusIcon, MinusIcon } from './Icons';
 
 export default function GraphToolbar() {
   const { fitView, zoomIn, zoomOut, getViewport } = useReactFlow();
@@ -18,21 +19,18 @@ export default function GraphToolbar() {
 
   return (
     <div className="z-10">
-      <div className="panel-solid subtle-shadow px-2 py-2 flex items-center gap-1">
-        <button className="btn" onClick={() => fitView()} title="Fit view">
-          Fit
+      <div className="panel-solid subtle-shadow px-1.5 py-1.5 flex items-center gap-1">
+        <button className="btn-icon" onClick={() => fitView({ padding: 0.15 })} title="Ajuster à la vue">
+          <FitIcon size={14} />
         </button>
-        <button className="btn" onClick={() => zoomOut()} title="Zoom out">
-          −
+        <button className="btn-icon" onClick={() => zoomOut()} title="Zoom arrière">
+          <MinusIcon size={14} />
         </button>
-        <button className="btn" onClick={() => zoomIn()} title="Zoom in">
-          +
+        <button className="btn-icon" onClick={() => zoomIn()} title="Zoom avant">
+          <PlusIcon size={14} />
         </button>
-        <span className="text-[11px] text-zinc-400 pl-2">{pct}%</span>
+        <span className="text-[11px] font-mono text-ash-faint px-2 tabular-nums">{pct}%</span>
       </div>
     </div>
   );
 }
-
-
-

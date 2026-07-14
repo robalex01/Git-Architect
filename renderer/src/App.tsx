@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge, Position } from 'reactflow';
+import { Node, Edge } from 'reactflow';
 
 import { useRepoStore } from './state/repoStore';
 import { TreeNode } from './lib/api';
@@ -8,10 +8,11 @@ import CommitDialog from './components/CommitDialog';
 import GraphLegend from './components/GraphLegend';
 import FileViewer from './components/FileViewer';
 import GraphToolbar from './components/GraphToolbar';
-import SearchInTree from './components/SearchInTree';
 import GraphShell from './components/GraphShell';
+import Sidebar from './components/Sidebar';
+import { AlertIcon, CheckCircleIcon, XIcon, OpenFolderIcon } from './components/Icons';
 
-// Layout très simple : chaque profondeur = une colonne, empilement vertical.
+// Layout simple : chaque profondeur = une colonne, empilement vertical.
 // (Suffisant pour une première version ; à remplacer par un vrai algorithme
 // de layout — ex. dagre — quand l'arborescence deviendra volumineuse.)
 function buildGraph(tree: TreeNode | null): { nodes: Node[]; edges: Edge[] } {
@@ -20,7 +21,6 @@ function buildGraph(tree: TreeNode | null): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // Adaptatif pour éviter des nodes gigantesques sur de grands arbres
   const depthCount = (() => {
     let maxDepth = 0;
     const walk = (n: TreeNode | null, d: number) => {
@@ -33,63 +33,44 @@ function buildGraph(tree: TreeNode | null): { nodes: Node[]; edges: Edge[] } {
   })();
 
   const compactFactor = depthCount > 0 ? Math.max(0.6, 1 - depthCount * 0.05) : 1;
-  const colWidth = Math.round(160 * compactFactor);
-  const rowHeight = Math.round(46 * compactFactor);
-  const colCounters: Record<number, number> = {};
+  const colWidth = Math.round(190 * compactFactor);
+  const rowHeight = Math.round(40 * compactFactor);
+  const rowCounter = { n: 0 };
 
-  const folderBg = '#2563eb'; // blue-600
-  const fileBg = '#18181b'; // zinc-900-ish
-  const border = 'rgba(148,163,184,0.22)'; // slate-400/20
-  const text = 'rgba(241,245,249,1)'; // slate-50
-
-  function visit(node: TreeNode, depth: number, parentId: string | null) {
+  // Layout d'arbre : une feuille (fichier, ou dossier vide) prend la
+  // prochaine "ligne" disponible ; un dossier se positionne au centre
+  // vertical de ses enfants (moyenne min/max). Ça garde chaque sous-arbre
+  // visuellement groupé et évite les arêtes qui repartent loin en haut/en
+  // bas de l'écran.
+  function layout(node: TreeNode, depth: number, parentId: string | null): number {
     const id = node.path || '__root__';
-    const row = colCounters[depth] ?? 0;
-    colCounters[depth] = row + 1;
-
     const isFolder = node.type === 'folder';
+    const label = (node.name || '(racine)').slice(0, 24) + ((node.name || '(racine)').length > 24 ? '…' : '');
+
+    let y: number;
+    if (node.children && node.children.length > 0) {
+      const childYs = node.children.map((c) => layout(c, depth + 1, id));
+      y = (Math.min(...childYs) + Math.max(...childYs)) / 2;
+    } else {
+      y = rowCounter.n * rowHeight;
+      rowCounter.n += 1;
+    }
 
     nodes.push({
       id,
-      position: { x: depth * colWidth, y: row * rowHeight },
-      data: {
-        label: (node.name || '(racine)').slice(0, 22) + ((node.name || '(racine)').length > 22 ? '…' : ''),
-        type: node.type,
-      },
-      type: depth === 0 ? 'input' : undefined,
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-      style: {
-        background: isFolder ? folderBg : fileBg,
-        color: text,
-        border: `1px solid ${border}`,
-        borderRadius: 10,
-        fontSize: 11,
-        padding: 6,
-        boxShadow: 'none',
-      },
+      position: { x: depth * colWidth, y },
+      type: isFolder ? 'folderNode' : 'fileNode',
+      data: { label, type: node.type },
     });
 
     if (parentId) {
-      edges.push({
-        id: `${parentId}->${id}`,
-        source: parentId,
-        target: id,
-        style: {
-          stroke: 'rgba(148,163,184,0.35)',
-          strokeWidth: 1.2,
-        },
-      });
+      edges.push({ id: `${parentId}->${id}`, source: parentId, target: id });
     }
 
-    if (node.children) {
-      for (const child of node.children) {
-        visit(child, depth + 1, id);
-      }
-    }
+    return y;
   }
 
-  visit(tree, 0, null);
+  layout(tree, 0, null);
   return { nodes, edges };
 }
 
@@ -110,7 +91,6 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(err: any) {
-    // visible in devtools
     // eslint-disable-next-line no-console
     console.error('React render error:', err);
   }
@@ -118,23 +98,18 @@ class ErrorBoundary extends React.Component<
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <div className="h-screen w-screen p-6 bg-zinc-950 text-zinc-100">
-        <div className="text-red-300 text-lg font-semibold mb-2">Erreur de rendu</div>
-        <div className="text-sm text-zinc-300 mb-4">
-          {this.state.message ?? 'Erreur inconnue'}
-        </div>
-        <div className="text-xs text-zinc-500">
-          Ouvrir la console Electron/Renderer pour plus de détails.
-        </div>
+      <div className="h-screen w-screen p-6 bg-ink text-ash-bright">
+        <div className="text-danger text-lg font-semibold mb-2">Erreur de rendu</div>
+        <div className="text-sm text-ash mb-4">{this.state.message ?? 'Erreur inconnue'}</div>
+        <div className="text-xs text-ash-faint">Ouvrir la console Electron/Renderer pour plus de détails.</div>
       </div>
     );
   }
 }
 
 export default function App() {
-  const { repoPath, tree, error, clearError } = useRepoStore();
+  const { repoPath, tree, error, notice, clearError, clearNotice, openFile } = useRepoStore();
   const [commitOpen, setCommitOpen] = useState(false);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   const { nodes, edges } = useMemo(() => buildGraph(tree), [tree]);
 
@@ -144,67 +119,68 @@ export default function App() {
     return () => clearTimeout(t);
   }, [error, clearError]);
 
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(clearNotice, 3500);
+    return () => clearTimeout(t);
+  }, [notice, clearNotice]);
+
   return (
     <ErrorBoundary>
-      <div className="h-screen w-screen flex flex-col bg-zinc-950 text-zinc-100">
+      <div className="h-screen w-screen flex flex-col bg-ink text-ash-bright font-sans overflow-hidden">
         <Toolbar onCommitClick={() => setCommitOpen(true)} />
 
         {error && (
-          <div className="bg-red-900/80 border-b border-red-700 text-red-100 text-sm px-4 py-2 flex justify-between">
-            <span>{error}</span>
-            <button
-              onClick={clearError}
-              className="opacity-70 hover:opacity-100"
-            >
-              ✕
+          <div className="bg-danger-dim border-b border-danger/40 text-ash-bright text-[13px] px-4 py-2 flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2"><AlertIcon size={14} className="text-danger shrink-0" />{error}</span>
+            <button onClick={clearError} className="text-ash-faint hover:text-ash-bright shrink-0">
+              <XIcon size={13} />
+            </button>
+          </div>
+        )}
+        {notice && !error && (
+          <div className="bg-success-dim border-b border-success/40 text-ash-bright text-[13px] px-4 py-2 flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2"><CheckCircleIcon size={14} className="text-success shrink-0" />{notice}</span>
+            <button onClick={clearNotice} className="text-ash-faint hover:text-ash-bright shrink-0">
+              <XIcon size={13} />
             </button>
           </div>
         )}
 
         <div className="flex-1 relative flex min-h-0 overflow-hidden">
-          {/* Left rail: search */}
-          <div className="border-r border-zinc-800 w-[340px] min-w-[280px] max-w-[420px] flex flex-col">
-            <div className="p-3 border-b border-zinc-800">
-              <SearchInTree />
-            </div>
-            <div className="h-full flex-1">
-              <FileViewer filePath={selectedFilePath} />
-            </div>
-          </div>
+          <Sidebar />
 
-          {/* Graph */}
-          <div className="flex-1 relative min-w-0 bg-zinc-950">
-            {/* In-graph overlays (kept inside graph container, not full-screen absolute) */}
-            <div className="absolute left-0 top-0 right-0 z-10 p-3 flex items-start justify-between">
+          <div className="flex-1 relative min-w-0 bg-ink">
+            <div className="absolute left-0 top-0 right-0 z-10 p-3 flex items-start justify-between pointer-events-none [&>*]:pointer-events-auto">
               <GraphToolbar />
-              <div className="pl-3">
-                <GraphLegend />
-              </div>
+              <GraphLegend />
             </div>
 
             {!repoPath ? (
-              <div className="absolute inset-0 flex items-center justify-center text-zinc-500">
-                Ouvre un dossier ou clone un dépôt pour commencer.
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-ash-faint blueprint-grid">
+                <div className="corner-ticks px-6 py-5 text-center">
+                  <OpenFolderIcon size={22} className="mx-auto mb-3 text-blueprint" />
+                  <div className="text-ash-bright text-[14px] font-medium mb-1">Aucun dépôt ouvert</div>
+                  <div className="text-[12.5px]">Ouvre un dossier ou clone un dépôt pour visualiser sa structure.</div>
+                </div>
               </div>
             ) : (
               <GraphShell
                 nodes={nodes}
                 edges={edges}
                 onNodeClick={(nodeId) => {
-
                   const node = nodes.find((n) => n.id === nodeId);
-                  const t = node?.data?.type as string | undefined;
-                  if (t === 'file') setSelectedFilePath(String(nodeId));
+                  if (node?.type === 'fileNode') openFile(nodeId);
                 }}
               />
             )}
+
+            <FileViewer />
           </div>
         </div>
-
 
         <CommitDialog open={commitOpen} onClose={() => setCommitOpen(false)} />
       </div>
     </ErrorBoundary>
   );
 }
-

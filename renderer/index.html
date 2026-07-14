@@ -3,11 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Electron security: strict CSP (no unsafe-eval) -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:5173; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-    />
+    <!--
+      Electron security: la CSP est appliquée exclusivement via les en-têtes HTTP
+      (voir electron/main/index.ts -> onHeadersReceived). Une CSP en <meta> ne peut
+      pas appliquer "frame-ancestors" (le navigateur ignore cette directive quand
+      elle vient d'une balise <meta>, d'où l'avertissement "The Content Security
+      Policy directive 'frame-ancestors' is ignored..."). On évite donc toute
+      duplication ici.
+    -->
     <title>Git Architect</title>
   </head>
   <body>

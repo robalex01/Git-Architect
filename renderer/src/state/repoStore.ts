@@ -1,15 +1,25 @@
 import { create } from 'zustand';
 import { api, TreeNode } from '../lib/api';
 
+interface FileContentState {
+  path: string;
+  content: string;
+  loading: boolean;
+  error: string | null;
+}
+
 interface RepoState {
   repoPath: string | null;
   isRepo: boolean;
   branch: string | null;
+  branches: { all: string[]; current: string } | null;
   status: any | null;
   tree: TreeNode | null;
   log: any[];
   loading: boolean;
   error: string | null;
+  notice: string | null;
+  fileContent: FileContentState | null;
 
   openFolder: () => Promise<void>;
   openPath: (p: string) => Promise<void>;
@@ -18,24 +28,89 @@ interface RepoState {
   refreshStatus: () => Promise<void>;
   refreshTree: () => Promise<void>;
   refreshLog: () => Promise<void>;
+  refreshBranches: () => Promise<void>;
   commit: (title: string, description?: string) => Promise<void>;
   push: () => Promise<void>;
   pull: () => Promise<void>;
   fetch: () => Promise<void>;
+  checkout: (branch: string) => Promise<void>;
+  stash: () => Promise<void>;
+  reset: (mode: 'soft' | 'mixed' | 'hard') => Promise<void>;
+  openFile: (relPath: string) => Promise<void>;
+  closeFile: () => void;
   clearError: () => void;
+  clearNotice: () => void;
 }
 
 export const useRepoStore = create<RepoState>((set, get) => ({
   repoPath: null,
   isRepo: false,
   branch: null,
+  branches: null,
   status: null,
   tree: null,
   log: [],
   loading: false,
   error: null,
+  notice: null,
+  fileContent: null,
 
   clearError: () => set({ error: null }),
+  clearNotice: () => set({ notice: null }),
+  closeFile: () => set({ fileContent: null }),
+
+  openFile: async (relPath: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ fileContent: { path: relPath, content: '', loading: true, error: null } });
+    const res = await api.readFile(repoPath, relPath);
+    if (!res.ok) {
+      set({ fileContent: { path: relPath, content: '', loading: false, error: res.error } });
+      return;
+    }
+    set({ fileContent: { path: relPath, content: res.data, loading: false, error: null } });
+  },
+
+  refreshBranches: async () => {
+    const { repoPath, isRepo } = get();
+    if (!repoPath || !isRepo) return;
+    const res = await api.branches(repoPath);
+    if (!res.ok) return set({ error: res.error });
+    set({ branches: res.data });
+  },
+
+  checkout: async (branchName: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ loading: true, error: null });
+    const res = await api.checkout(repoPath, branchName);
+    set({ loading: false });
+    if (!res.ok) return set({ error: res.error });
+    set({ notice: `Basculé sur "${branchName}".` });
+    await Promise.all([get().refreshStatus(), get().refreshTree(), get().refreshLog(), get().refreshBranches()]);
+  },
+
+  stash: async () => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ loading: true, error: null });
+    const res = await api.stash(repoPath);
+    set({ loading: false });
+    if (!res.ok) return set({ error: res.error });
+    set({ notice: 'Modifications mises de côté (stash).' });
+    await get().refreshStatus();
+  },
+
+  reset: async (mode: 'soft' | 'mixed' | 'hard') => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ loading: true, error: null });
+    const res = await api.reset(repoPath, mode);
+    set({ loading: false });
+    if (!res.ok) return set({ error: res.error });
+    set({ notice: `Reset --${mode} effectué.` });
+    await Promise.all([get().refreshStatus(), get().refreshTree(), get().refreshLog()]);
+  },
 
   openFolder: async () => {
     const res = await api.selectFolder();
@@ -59,7 +134,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       loading: false,
     });
     if (res.data.isRepo) {
-      await Promise.all([get().refreshTree(), get().refreshLog()]);
+      await Promise.all([get().refreshTree(), get().refreshLog(), get().refreshBranches()]);
     } else {
       await get().refreshTree();
     }

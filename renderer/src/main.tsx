@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { ReactFlowProvider } from 'reactflow';
 import App from './App';
+import 'reactflow/dist/style.css';
 import './styles.css';
 
 
@@ -11,7 +12,7 @@ import './styles.css';
 // où l'API History (utilisée par BrowserRouter) ne fonctionne pas.
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HashRouter>
+    <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ReactFlowProvider>
         <App />
       </ReactFlowProvider>
