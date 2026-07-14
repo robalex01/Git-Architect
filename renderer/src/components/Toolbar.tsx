@@ -17,8 +17,9 @@ export default function Toolbar({ onCommitClick }: { onCommitClick: () => void }
     (status?.created?.length ?? 0);
 
   return (
-    <div className="w-full bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center gap-3 text-sm text-zinc-200">
+    <div className="w-full bg-zinc-900/70 backdrop-blur border-b border-zinc-800 px-4 py-2 flex items-center gap-3 text-sm text-zinc-200">
       <span className="font-semibold text-blue-400">Git Architect</span>
+
 
       <button className="btn" onClick={openFolder}>Ouvrir un dossier</button>
 

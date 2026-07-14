@@ -145,13 +145,25 @@ export function registerGitHandlers() {
       if (!isRepo) {
         return ok({ path: repoPath, isRepo: false, branch: null, status: null });
       }
-      const status = await git.status();
-      let branch = status.current ?? null;
+
+      const rawStatus = await git.status();
+      const branch = rawStatus.current ?? null;
+
+      // IMPORTANT: ne jamais renvoyer l'objet brut de simple-git via IPC.
+      // normaliser uniquement les champs sérialisables attendus par le renderer.
+      const status = {
+        modified: rawStatus.modified ?? [],
+        not_added: rawStatus.not_added ?? [],
+        deleted: rawStatus.deleted ?? [],
+        created: rawStatus.created ?? [],
+      };
+
       return ok({ path: repoPath, isRepo: true, branch, status });
     } catch (e) {
       return fail(e);
     }
   });
+
 
   ipcMain.handle('gitarch:initRepo', async (_e, repoPath: string) => {
     try {
@@ -181,12 +193,25 @@ export function registerGitHandlers() {
   ipcMain.handle('gitarch:status', async (_e, repoPath: string) => {
     try {
       const git = getGit(repoPath);
-      const status = await git.status();
+      const rawStatus = await git.status();
+
+      // Normalisation pour éviter le clonage IPC impossible.
+      const status = {
+        modified: rawStatus.modified ?? [],
+        not_added: rawStatus.not_added ?? [],
+        deleted: rawStatus.deleted ?? [],
+        created: rawStatus.created ?? [],
+        // on garde aussi l’info “isClean/current” si jamais un jour le renderer s’en sert
+        current: rawStatus.current ?? null,
+        isClean: typeof (rawStatus as any).isClean === 'function' ? (rawStatus as any).isClean() : null,
+      };
+
       return ok(status);
     } catch (e) {
       return fail(e);
     }
   });
+
 
   ipcMain.handle('gitarch:log', async (_e, { repoPath, limit }: { repoPath: string; limit?: number }) => {
     try {

@@ -6,13 +6,30 @@ html, body, #root { height: 100%; }
 
 @layer components {
   .btn {
-    @apply px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+    @apply px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm
+      hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed
+      transition-colors duration-150
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60;
   }
   .btn-primary {
-    @apply bg-blue-600 border-blue-500 hover:bg-blue-500;
+    @apply bg-blue-600 border-blue-500 hover:bg-blue-500 active:bg-blue-700;
   }
   .input {
-    @apply px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-blue-500;
+    @apply px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-sm text-zinc-100 placeholder-zinc-500
+      outline-none transition-colors duration-150
+      focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60;
+  }
+
+  .panel {
+    @apply bg-zinc-900/70 backdrop-blur border border-zinc-800 rounded-lg;
+  }
+  .panel-solid {
+    @apply bg-zinc-900 border border-zinc-800 rounded-lg;
+  }
+
+  .subtle-shadow {
+    @apply shadow-sm shadow-black/30;
   }
 }
+
 

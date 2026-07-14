@@ -3,6 +3,21 @@ import path from 'path';
 import fs from 'fs';
 import { registerGitHandlers } from './git';
 
+function applyCspHeaders(win: BrowserWindow) {
+  // Enforce CSP via response headers (meta CSP can't reliably enforce frame-ancestors).
+  // Only applies for the current window.
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = details.responseHeaders ?? {};
+
+    const csp = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:5173; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+
+    responseHeaders['Content-Security-Policy'] = [csp];
+
+    callback({ responseHeaders });
+  });
+}
+
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -16,6 +31,11 @@ function createWindow() {
     }
   });
 
+  // Debug: ouvrir DevTools pour voir l’erreur si l’UI reste blanche
+  win.webContents.openDevTools({ mode: 'detach' });
+
+  applyCspHeaders(win);
+
   // Vite dev server url
   if (process.env.NODE_ENV === 'development' && process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -28,6 +48,8 @@ function createWindow() {
     }
   }
 }
+
+
 
 app.whenReady().then(() => {
   registerGitHandlers();
